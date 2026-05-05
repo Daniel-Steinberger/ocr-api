@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
+from ocr_api.jobs import JobStore
 from ocr_api.routes import router
 
-app = FastAPI(title="ocr-api", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.job_store = JobStore()
+    # app.state.converter is wired in step 8 (real model loading)
+    yield
+
+
+app = FastAPI(title="ocr-api", version="0.1.0", lifespan=lifespan)
 app.include_router(router)
 
 
