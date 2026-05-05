@@ -35,6 +35,20 @@ def test_convert_requires_api_key(client: TestClient, sample_pdf: Path):
     assert response.status_code == 401
 
 
+def test_convert_json(client: TestClient, sample_pdf: Path):
+    response = _upload(client, sample_pdf, format="json")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["format"] == "json"
+    assert body["markdown"] is None
+    assert body["json_blocks"] == [{"block_type": "Page", "id": "/page/0"}]
+
+
+def test_convert_rejects_unknown_format(client: TestClient, sample_pdf: Path):
+    response = _upload(client, sample_pdf, format="xml")
+    assert response.status_code == 422  # Pydantic Literal rejects xml
+
+
 def test_convert_rejects_non_pdf(client: TestClient, tmp_path: Path):
     txt = tmp_path / "note.txt"
     txt.write_bytes(b"hi")
