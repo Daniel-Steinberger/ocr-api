@@ -1,9 +1,11 @@
 import asyncio
+import os
 from pathlib import Path
 
 import pytest
 
-from ocr_api.converter import ConvertResult, MarkerConverter
+from ocr_api.config import Settings
+from ocr_api.converter import ConvertResult, MarkerConverter, mute_progress_bars
 
 
 class FakePdfConverter:
@@ -61,6 +63,22 @@ async def test_convert_rejects_unknown_format(tmp_path: Path):
 
     with pytest.raises(ValueError):
         await converter.convert(pdf, output_format="xml")
+
+
+def test_settings_parses_disable_progress_bars(monkeypatch):
+    monkeypatch.setenv("DISABLE_PROGRESS_BARS", "true")
+    settings = Settings(_env_file=None)
+    assert settings.disable_progress_bars is True
+
+
+def test_mute_progress_bars_sets_env_flags(monkeypatch):
+    for var in ("TQDM_DISABLE", "HF_HUB_DISABLE_PROGRESS_BARS"):
+        monkeypatch.delenv(var, raising=False)
+
+    mute_progress_bars()
+
+    assert os.environ["TQDM_DISABLE"] == "1"
+    assert os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] == "1"
 
 
 async def test_semaphore_limits_concurrency(tmp_path: Path):

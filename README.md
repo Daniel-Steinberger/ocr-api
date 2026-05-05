@@ -113,6 +113,13 @@ nennt 5 GB peak, 3.5 GB avg pro Worker).
 Env-Variable `API_KEY`. Reicht für interne Services hinter Reverse-
 Proxy. Für öffentliche Deployments OAuth/JWT vorlagern.
 
+**Stille Logs in Production** — `DISABLE_PROGRESS_BARS=1` setzt
+`TQDM_DISABLE=1` und `HF_HUB_DISABLE_PROGRESS_BARS=1` vor dem marker-
+Import und gibt zusätzlich `disable_tqdm=True` an `PdfConverter`. So
+verschwinden die Download- und Inference-Fortschrittsbalken aus dem
+stdout-Stream — wichtig, wenn ein Log-Aggregator mitliest. Im
+Dockerfile per Default an, lokal aus.
+
 **uv mit explizitem PyTorch-CUDA-Index** — `pyproject.toml` zeigt
 `torch` und `torchvision` auf den `cu128`-Index der PyTorch-Foundation,
 damit `uv sync` die GPU-Wheels auflöst. Andere Pakete kommen weiterhin

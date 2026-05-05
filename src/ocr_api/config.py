@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     api_key: str | None = None
     torch_device: str = "cuda"
     max_concurrent_jobs: int = 1
+    disable_progress_bars: bool = False
 
 
 @lru_cache(maxsize=1)

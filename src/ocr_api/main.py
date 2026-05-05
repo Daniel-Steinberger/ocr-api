@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
         logger.info("loading marker models on device=%s", settings.torch_device)
         app.state.converter = build_default_converter(
             max_concurrent=settings.max_concurrent_jobs,
+            disable_progress_bars=settings.disable_progress_bars,
         )
         logger.info("marker models loaded")
     else:

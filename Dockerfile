@@ -25,6 +25,7 @@ RUN uv sync --frozen --no-dev
 
 ENV TORCH_DEVICE=cuda \
     OCR_API_LOAD_MODELS=1 \
+    DISABLE_PROGRESS_BARS=1 \
     HF_HOME=/models/hf
 
 EXPOSE 8000
