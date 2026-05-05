@@ -125,3 +125,16 @@ async def get_job(
         error=job.error,
         created_at=job.created_at,
     )
+
+
+@router.delete(
+    "/jobs/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_api_key)],
+)
+async def delete_job(
+    job_id: str,
+    store: JobStore = Depends(_get_job_store_dependency),
+) -> None:
+    if not await store.delete(job_id):
+        raise HTTPException(status_code=404, detail="job not found")

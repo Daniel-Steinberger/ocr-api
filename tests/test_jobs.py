@@ -51,3 +51,19 @@ def test_jobs_require_api_key(client: TestClient, sample_pdf: Path):
     with sample_pdf.open("rb") as fh:
         r = client.post("/jobs", files={"file": (sample_pdf.name, fh, "application/pdf")})
     assert r.status_code == 401
+
+
+def test_delete_job(client: TestClient, sample_pdf: Path):
+    job_id = _post_job(client, sample_pdf).json()["job_id"]
+    _wait_done(client, job_id)
+
+    delete = client.delete(f"/jobs/{job_id}", headers={"X-API-Key": "secret"})
+    assert delete.status_code == 204
+
+    after = client.get(f"/jobs/{job_id}", headers={"X-API-Key": "secret"})
+    assert after.status_code == 404
+
+
+def test_delete_unknown_job_returns_404(client: TestClient):
+    r = client.delete("/jobs/no-such-id", headers={"X-API-Key": "secret"})
+    assert r.status_code == 404
