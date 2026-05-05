@@ -13,14 +13,22 @@ uv sync                                    # installiert Python 3.12, torch+cu12
 cp .env.example .env
 # API_KEY in .env auf einen geheimen Wert setzen
 
-# 3. Server starten — beim ersten Request lädt marker seine Modelle (~5 GB Download
-#    aus dem HuggingFace-Hub, danach im Cache)
+# 3. Server starten — beim Start lädt marker seine Modelle (~5 GB Download in
+#    ~/.cache/datalab/, danach im Cache)
 OCR_API_LOAD_MODELS=1 uv run uvicorn ocr_api.main:app --host 0.0.0.0 --port 8000
+
+# Optional: Progress-Bars im stdout unterdrücken (für strukturiertes Logging)
+DISABLE_PROGRESS_BARS=1 OCR_API_LOAD_MODELS=1 uv run uvicorn ocr_api.main:app --port 8000
 
 # 4. Health-Check
 curl http://localhost:8000/health
 # → {"status":"ok","gpu":true,"device":"NVIDIA GeForce RTX 4070 SUPER"}
 ```
+
+> Wird der Server während des ersten Modell-Downloads abgebrochen, bleibt
+> ein halb fertiger Cache zurück und der nächste Start scheitert mit
+> `Destination path '...model.safetensors' already exists`. Lösung:
+> `rm -rf ~/.cache/datalab/models/<modell>/<version>/` und erneut starten.
 
 ## Quickstart (Docker)
 
@@ -32,6 +40,20 @@ docker compose up --build
 ```
 
 Voraussetzung: NVIDIA Container Toolkit (`nvidia-ctk runtime configure --runtime=docker`).
+
+## Konfiguration
+
+Alle Settings sind Env-Variablen (auch via `.env` ladbar — siehe
+`.env.example`):
+
+| Variable | Default | Zweck |
+|---|---|---|
+| `API_KEY` | — | Statischer Schlüssel; Clients senden ihn als `X-API-Key`-Header. Pflicht für alle geschützten Endpunkte. |
+| `TORCH_DEVICE` | `cuda` | An marker durchgereicht (`cuda` / `cpu` / `mps`). |
+| `MAX_CONCURRENT_JOBS` | `1` | Obergrenze für gleichzeitige Konvertierungen (Semaphore). Bei 12-GB-GPU 1–2 sicher. |
+| `OCR_API_LOAD_MODELS` | unset | `1` ⇒ Lifespan lädt marker-Modelle in VRAM. Im Docker-Image gesetzt; lokal manuell. |
+| `DISABLE_PROGRESS_BARS` | `0` | `1` ⇒ tqdm + HF-Progress + marker-`disable_tqdm` an. Empfohlen, sobald stdout von einem Log-Aggregator gelesen wird. Im Docker-Image default an. |
+| `HF_HOME` | `~/.cache/huggingface` | Cache-Ort für HuggingFace-Modelle. Im Container auf das `hf-cache`-Volume gemountet. |
 
 ## Endpoints
 
@@ -128,7 +150,7 @@ von PyPI.
 ## Tests
 
 ```bash
-uv run pytest                              # 21 Tests, ohne Modell-Load (~1.5 s)
+uv run pytest                              # 23 Tests, ohne Modell-Load (~1.5 s)
 OCR_API_LOAD_MODELS=1 uv run pytest        # zusätzlich Lifespan-Test mit echten Modellen
 uv run ruff check src tests                # Linting
 ```
@@ -142,7 +164,7 @@ Suite ohne GPU und ohne Modell-Download.
 ```
 src/ocr_api/
 ├── main.py        # FastAPI-App + Lifespan (lädt JobStore + optional Modelle)
-├── config.py      # pydantic-settings: API_KEY, TORCH_DEVICE, MAX_CONCURRENT_JOBS
+├── config.py      # pydantic-settings: API_KEY, TORCH_DEVICE, MAX_CONCURRENT_JOBS, DISABLE_PROGRESS_BARS
 ├── auth.py        # require_api_key Depends
 ├── converter.py   # MarkerConverter (Semaphore + to_thread) + build_default_converter
 ├── jobs.py        # In-Memory-JobStore + run_job-BackgroundTask
