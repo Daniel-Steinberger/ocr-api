@@ -66,6 +66,7 @@ async def run_job(
         payload = {
             "format": output_format,
             "markdown": result.markdown,
+            "html": result.html,
             "json_blocks": result.json,
             "metadata": result.metadata,
         }

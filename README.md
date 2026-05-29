@@ -1,6 +1,6 @@
 # ocr-api
 
-FastAPI service that converts PDFs to Markdown or structured JSON using
+FastAPI service that converts PDFs to Markdown, HTML or structured JSON using
 [`marker-pdf`](https://github.com/datalab-to/marker) on a CUDA GPU.
 
 ## Quickstart (lokal)
@@ -62,8 +62,8 @@ Alle Endpunkte außer `/health` brauchen den Header `X-API-Key: <wert>`.
 | Methode | Pfad | Zweck |
 |---|---|---|
 | GET | `/health` | Liveness + GPU-Status |
-| POST | `/convert?format=markdown\|json` | **Synchron** — blockt bis fertig, gibt Ergebnis direkt zurück |
-| POST | `/jobs?format=markdown\|json` | **Asynchron** — gibt `job_id` zurück, Konvertierung läuft im Hintergrund |
+| POST | `/convert?format=markdown\|json\|html` | **Synchron** — blockt bis fertig, gibt Ergebnis direkt zurück |
+| POST | `/jobs?format=markdown\|json\|html` | **Asynchron** — gibt `job_id` zurück, Konvertierung läuft im Hintergrund |
 | GET | `/jobs/{id}` | Status eines Jobs (`queued` / `running` / `done` / `failed`) inkl. Ergebnis |
 | DELETE | `/jobs/{id}` | Job-Eintrag aus dem In-Memory-Store entfernen |
 
@@ -81,6 +81,14 @@ Synchron, JSON-Block-Tree:
 curl -H "X-API-Key: $API_KEY" \
      -F file=@report.pdf \
      "http://localhost:8000/convert?format=json"
+```
+
+Synchron, HTML (Tabellenzellen bleiben als zusammenhängende `<td>` erhalten,
+auch mehrzeilig — anders als beim zeilenweisen Markdown):
+```bash
+curl -H "X-API-Key: $API_KEY" \
+     -F file=@report.pdf \
+     "http://localhost:8000/convert?format=html" | jq -r .html
 ```
 
 Asynchron mit Polling (für PDFs >20 Seiten empfohlen):

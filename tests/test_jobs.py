@@ -42,6 +42,14 @@ def test_get_job_eventually_done(client: TestClient, sample_pdf: Path):
     assert body["result"]["markdown"].startswith("# Converted")
 
 
+def test_get_job_html(client: TestClient, sample_pdf: Path):
+    job_id = _post_job(client, sample_pdf, format="html").json()["job_id"]
+    body = _wait_done(client, job_id)
+    assert body["status"] == "done"
+    assert body["result"]["format"] == "html"
+    assert body["result"]["html"].startswith("<h1>Converted")
+
+
 def test_get_job_unknown_returns_404(client: TestClient):
     response = client.get("/jobs/no-such-id", headers={"X-API-Key": "secret"})
     assert response.status_code == 404

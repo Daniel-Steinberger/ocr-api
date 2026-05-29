@@ -30,6 +30,17 @@ def test_convert_markdown(client: TestClient, sample_pdf: Path, fake_converter):
     assert len(fake_converter.calls) == 1
 
 
+def test_convert_html(client: TestClient, sample_pdf: Path):
+    response = _upload(client, sample_pdf, format="html")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["format"] == "html"
+    assert body["html"].startswith("<h1>Converted")
+    assert body["markdown"] is None
+    assert body["json_blocks"] is None
+    assert body.get("metadata") == {"page_count": 1}
+
+
 def test_convert_requires_api_key(client: TestClient, sample_pdf: Path):
     response = _upload(client, sample_pdf, format="markdown", api_key=None)
     assert response.status_code == 401

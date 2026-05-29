@@ -11,9 +11,15 @@ from ocr_api.converter import ConvertResult, MarkerConverter, mute_progress_bars
 class FakePdfConverter:
     """Stand-in for marker.converters.pdf.PdfConverter."""
 
-    def __init__(self, markdown: str = "# hello", json_blocks: list | None = None):
+    def __init__(
+        self,
+        markdown: str = "# hello",
+        json_blocks: list | None = None,
+        html: str = "<h1>hello</h1>",
+    ):
         self.markdown = markdown
         self.json_blocks = json_blocks or [{"block_type": "Page", "id": "/page/0"}]
+        self.html = html
         self.calls: list[str] = []
 
     def __call__(self, filepath: str):
@@ -24,6 +30,7 @@ class FakePdfConverter:
 
         rendered = _Rendered()
         rendered.markdown = self.markdown
+        rendered.html = self.html
         rendered.children = self.json_blocks
         rendered.metadata = {"page_count": 1}
         rendered.images = {}
@@ -32,7 +39,7 @@ class FakePdfConverter:
 
 async def test_convert_markdown(tmp_path: Path):
     fake = FakePdfConverter(markdown="# hi")
-    converter = MarkerConverter(pdf_converter=fake, max_concurrent=2)
+    converter = MarkerConverter(pdf_converters=fake, max_concurrent=2)
     pdf = tmp_path / "a.pdf"
     pdf.write_bytes(b"%PDF-1.4\n")
 
@@ -46,7 +53,7 @@ async def test_convert_markdown(tmp_path: Path):
 
 async def test_convert_json(tmp_path: Path):
     fake = FakePdfConverter(json_blocks=[{"block_type": "Page", "id": "/page/0"}])
-    converter = MarkerConverter(pdf_converter=fake, max_concurrent=1)
+    converter = MarkerConverter(pdf_converters=fake, max_concurrent=1)
     pdf = tmp_path / "b.pdf"
     pdf.write_bytes(b"%PDF-1.4\n")
 
@@ -56,8 +63,21 @@ async def test_convert_json(tmp_path: Path):
     assert result.markdown is None
 
 
+async def test_convert_html(tmp_path: Path):
+    fake = FakePdfConverter(html="<table><tr><td>multi\nline</td></tr></table>")
+    converter = MarkerConverter(pdf_converters=fake, max_concurrent=1)
+    pdf = tmp_path / "h.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n")
+
+    result = await converter.convert(pdf, output_format="html")
+
+    assert result.html == "<table><tr><td>multi\nline</td></tr></table>"
+    assert result.markdown is None
+    assert result.json is None
+
+
 async def test_convert_rejects_unknown_format(tmp_path: Path):
-    converter = MarkerConverter(pdf_converter=FakePdfConverter(), max_concurrent=1)
+    converter = MarkerConverter(pdf_converters=FakePdfConverter(), max_concurrent=1)
     pdf = tmp_path / "c.pdf"
     pdf.write_bytes(b"%PDF-1.4\n")
 
@@ -106,7 +126,7 @@ async def test_semaphore_limits_concurrency(tmp_path: Path):
 
             return R()
 
-    converter = MarkerConverter(pdf_converter=SlowFake(), max_concurrent=1)
+    converter = MarkerConverter(pdf_converters=SlowFake(), max_concurrent=1)
     pdf = tmp_path / "d.pdf"
     pdf.write_bytes(b"%PDF-1.4\n")
 
