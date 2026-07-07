@@ -63,7 +63,7 @@ async def _save_upload(file: UploadFile) -> Path:
 )
 async def convert(
     file: UploadFile = File(...),
-    format: Literal["markdown", "json"] = Query("markdown"),
+    format: Literal["markdown", "json", "html"] = Query("markdown"),
     converter: MarkerConverter = Depends(_get_converter_dependency),
 ) -> ConvertResponse:
     pdf_path = await _save_upload(file)
@@ -75,6 +75,7 @@ async def convert(
     return ConvertResponse(
         format=format,
         markdown=result.markdown,
+        html=result.html,
         json_blocks=result.json,
         metadata=result.metadata,
     )
@@ -89,7 +90,7 @@ async def convert(
 async def create_job(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    format: Literal["markdown", "json"] = Query("markdown"),
+    format: Literal["markdown", "json", "html"] = Query("markdown"),
     converter: MarkerConverter = Depends(_get_converter_dependency),
     store: JobStore = Depends(_get_job_store_dependency),
 ) -> JobCreatedResponse:

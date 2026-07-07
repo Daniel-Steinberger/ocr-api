@@ -28,6 +28,11 @@ class FakeMarkerConverter(MarkerConverter):
                 json=[{"block_type": "Page", "id": "/page/0"}],
                 metadata={"page_count": 1},
             )
+        if output_format == "html":
+            return ConvertResult(
+                html=f"<h1>Converted {pdf_path.name}</h1>",
+                metadata={"page_count": 1},
+            )
         raise ValueError(f"unsupported format: {output_format}")
 
 

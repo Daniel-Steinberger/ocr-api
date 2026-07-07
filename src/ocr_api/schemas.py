@@ -7,8 +7,9 @@ JobStatus = Literal["queued", "running", "done", "failed"]
 
 
 class ConvertResponse(BaseModel):
-    format: Literal["markdown", "json"]
+    format: Literal["markdown", "json", "html"]
     markdown: str | None = None
+    html: str | None = None
     json_blocks: list[Any] | dict | None = None
     metadata: dict | None = None
 
